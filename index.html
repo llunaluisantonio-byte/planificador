@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Mi Super Planificador en Línea!</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2f7;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        h1 {
+            text-align: center;
+            color: #4a90e2;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        .config-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #2196f3;
+        }
+        .config-box input {
+            padding: 8px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 250px;
+        }
+        .progress-container {
+            background: #eee;
+            border-radius: 10px;
+            height: 25px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 3px;
+            font-weight: bold;
+            color: #333;
+        }
+        .section-title {
+            padding: 8px 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .rutina { background-color: #ff9800; }
+        .estudio { background-color: #2196f3; }
+        .hogar { background-color: #9c27b0; }
+        .ocio { background-color: #e91e63; }
+
+        .task-list {
+            margin-bottom: 20px;
+        }
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8f9fa;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border-left: 5px solid #ccc;
+            transition: 0.2s;
+        }
+        .task-item.completed {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+            text-decoration: line-through;
+            color: #666;
+        }
+        .task-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1;
+        }
+        .task-time {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #4a90e2;
+            border: none;
+            background: transparent;
+            width: 110px;
+        }
+        .task-time:focus, .task-text:focus {
+            background: #fff;
+            outline: 2px solid #4a90e2;
+            border-radius: 4px;
+        }
+        .task-text {
+            font-size: 1.05rem;
+            border: none;
+            background: transparent;
+            width: 100%;
+        }
+        .checkbox-custom {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+        }
+        
+        .parent-panel {
+            margin-top: 30px;
+            background: #f1f8ff;
+            border: 2px dashed #4a90e2;
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .parent-panel h3 {
+            margin-top: 0;
+            color: #0d47a1;
+        }
+        .message-box {
+            width: 100%;
+            height: 60px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            resize: none;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn:hover { background: #357abd; }
+        .btn-clear { background: #e53935; margin-left: 10px;}
+        
+        .kids-mailbox {
+            background: #fff9c4;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 5px solid #fbc02d;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 ¡Planificador Facundo Adriano en Línea! 🌟</h1>
+    <p style="text-align: center; color: #666; font-size: 0.95rem;">💡 <strong>Tip:</strong> Puedes hacer clic y editar directamente los horarios (ej: 16:00) y las actividades desde cualquier pantalla.</p>
+    
+    <div class="config-box">
+        <label><strong>🔑 Código de Sincronización Familiar:</strong> </label>
+        <input type="text" id="familyKey" placeholder="Ej: familia-perez-123" onchange="initializeSync()">
+        <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #555;">Pon exactamente el mismo código en tu celular y en la tablet de tu hijo para ver los cambios a distancia.</p>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+        <div class="progress-text" id="progressText">0% Completado</div>
+    </div>
+
+    <div id="planner-tasks">
+        <div class="section-title rutina">🌅 Rutina de Mañana e Inicio</div>
+        <div class="task-list" id="list-morning"></div>
+
+        <div class="section-title estudio">📚 Deberes y Tiempo de Estudio</div>
+        <div class="task-list" id="list-study"></div>
+
+        <div class="section-title hogar">🏠 Responsabilidades en Casa</div>
+        <div class="task-list" id="list-home"></div>
+
+        <div class="section-title ocio">🎨 Actividades Lúdicas y Tiempo Libre</div>
+        <div class="task-list" id="list-fun"></div>
+    </div>
+
+    <div class="kids-mailbox" id="mailbox">
+        <strong>💌 Mensaje de motivación de Papá/Mamá:</strong>
+        <p id="mailbox-text" style="margin: 5px 0 0 0; font-style: italic; font-size: 1.1rem;"></p>
+    </div>
+
+    <div class="parent-panel">
+        <h3>👨‍👩‍👦 Rincón de Padres (Control a Distancia)</h3>
+        <p>Escribe una felicitación que le llegará a su pantalla al instante:</p>
+        <textarea class="message-box" id="parentMessage" placeholder="¡Excelente trabajo hoy! 🎉"></textarea>
+        <button class="btn" onclick="sendMessage()">Enviar Mensaje de Felicitación 💌</button>
+        <button class="btn btn-clear" onclick="resetDay()">Reiniciar Día</button>
+    </div>
+</div>
+
+<script>
+    const defaultTasks = [
+        { id: 1, cat: 'morning', time: '08:30-10:30', text: 'Vestirme, botar mi pichi, desayunar y dejar la cama hecha.', done: false },
+        { id: 2, cat: 'morning', time: '16:00-16:30', text: 'Merienda y revisar la mochila escolar.', done: false },
+        { id: 3, cat: 'study',   time: '16:30-17:30', text: 'Hacer deberes y repasar materias del día.', done: false },
+        { id: 4, cat: 'study',   time: '17:30-17:45', text: 'Tiempo de lectura libre.', done: false },
+        { id: 5, cat: 'home',    time: '18:00-18:30', text: 'Ordenar la habitación y ayudar en la casa.', done: false },
+        { id: 6, cat: 'fun',     time: '18:30-19:45', text: 'Actividad libre (Jugar, deporte o manualidades).', done: false },
+        { id: 7, cat: 'fun',     time: '20:00-21:00', text: 'Cena en familia y desconexión.', done: false }
+    ];
+
+    let tasks = [...defaultTasks];
+    let currentMessage = '';
+    let storageKey = '';
+
+    document.getElementById('familyKey').value = localStorage.getItem('familySyncKey') || '';
+    initializeSync();
+
+    function initializeSync() {
+        const key = document.getElementById('familyKey').value.trim();
+        if(!key) return;
+        
+        storageKey = encodeURIComponent(key);
+        localStorage.setItem('familySyncKey', key);
+        
+        fetchData();
+        clearInterval(window.syncInterval);
+        window.syncInterval = setInterval(fetchData, 8000); // Sincroniza cada 8 segundos
+    }
+
+    async function fetchData() {
+        if(!storageKey) return;
+        try {
+            const res = await fetch(`https://kvdb.io/MN8qDkC18Wd8x7bJbW1hDq/${storageKey}`);
+            if(res.ok) {
+                const data = await res.json();
+                tasks = data.tasks || defaultTasks;
+                currentMessage = data.message || '';
+                renderTasks();
+            } else if(res.status === 404) {
+                pushData();
+            }
+        } catch (e) { console.log("Reconectando...", e); }
+    }
+
+    async function pushData() {
+        if(!storageKey) return;
+        try {
+            await fetch(`https://kvdb.io/MN8qDkC18Wd8x7bJbW1hDq/${storageKey}`, {
+                method: 'POST',
+                body: JSON.stringify({ tasks: tasks, message: currentMessage })
+            });
+        } catch (e) { console.log("Error al guardar", e); }
+    }
+
+    function renderTasks() {
+        document.getElementById('list-morning').innerHTML = '';
+        document.getElementById('list-study').innerHTML = '';
+        document.getElementById('list-home').innerHTML = '';
+        document.getElementById('list-fun').innerHTML = '';
+
+        tasks.forEach(task => {
+            const container = document.getElementById(`list-${task.cat}`);
+            const item = document.createElement('div');
+            item.className = `task-item ${task.done ? 'completed' : ''}`;
+            
+            item.innerHTML = `
+                <div class="task-left">
+                    <input type="checkbox" class="checkbox-custom" ${task.done ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                    <input type="text" class="task-time" value="${task.time}" onchange="updateTaskTime(${task.id}, this.value)">
+                    <input type="text" class="task-text" value="${task.text}" onchange="updateTaskText(${task.id}, this.value)">
+                </div>
+            `;
+            container.appendChild(item);
+        });
+        updateProgress();
+        renderMessage();
+    }
+
+    function toggleTask(id) {
+        const task = tasks.find(t => t.id === id);
+        if(task) {
+            task.done = !task.done;
+            renderTasks();
+            pushData();
+        }
+    }
+
+    function updateTaskText(id, newText) {
+        const task = tasks.find(t => t.id === id);
+        if(task) {
+            task.text = newText;
+            pushData();
+        }
+    }
+
+    function updateTaskTime(id, newTime) {
+        const task = tasks.find(t => t.id === id);
+        if(task) {
+            task.time = newTime;
+            pushData();
+        }
+    }
+
+    function updateProgress() {
+        const total = tasks.length;
+        const completed = tasks.filter(t => t.done).length;
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+        
+        document.getElementById('progressBar').style.width = `${percentage}%`;
+        document.getElementById('progressText').innerText = `${percentage}% Completado (${completed}/${total})`;
+    }
+
+    function sendMessage() {
+        currentMessage = document.getElementById('parentMessage').value;
+        renderMessage();
+        pushData();
+    }
+
+    function renderMessage() {
+        const mailbox = document.getElementById('mailbox');
+        const mailboxText = document.getElementById('mailbox-text');
+        if (currentMessage.trim() !== '') {
+            mailboxText.innerText = currentMessage;
+            mailbox.style.display = 'block';
+        } else {
+            mailbox.style.display = 'none';
+        }
+    }
+
+    function resetDay() {
+        tasks.forEach(t => t.done = false);
+        currentMessage = '';
+        document.getElementById('parentMessage').value = '';
+        renderTasks();
+        pushData();
+    }
+
+    renderTasks();
+</script>
+
+</body>
+</html>
