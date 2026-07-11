@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>¡Mi Super Planificador Conectado!</title>
+    <title>¡Planificador Conectado!</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -171,12 +171,13 @@
 <body>
 
 <div class="container">
-    <h1>🚀 ¡Planificador Facundo Adriano en Línea! 🌟</h1>
+    <h1>🚀 ¡Planificador Facundo Adriano Conectado! 🌟</h1>
+    <p style="text-align: center; color: #666; font-size: 0.95rem;">Puedes hacer clic y cambiar los textos u horarios directamente desde la pantalla.</p>
     
     <div class="config-box">
-        <label><strong>🔑 Pegar Bin ID de la Familia:</strong> </label>
-        <input type="text" id="familyKey" placeholder="Pega el código de JSONBin aquí..." onchange="initializeSync()">
-        <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #555;">Coloca el mismo código exacto en todos los dispositivos para sincronizar a distancia.</p>
+        <label><strong>🔑 Código de Sincronización Familiar:</strong> </label>
+        <input type="text" id="familyKey" placeholder="Ej: familia-garcia-123" onchange="initializeSync()">
+        <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #555;">Pon exactamente el mismo código en tu celular y en la tablet de tu hijo.</p>
     </div>
 
     <div class="progress-container">
@@ -213,6 +214,7 @@
 </div>
 
 <script>
+    // EDITAR AQUÍ: Si cambias estos horarios por defecto, se reflejarán obligatoriamente en tu web externa.
     const defaultTasks = [
         { id: 1, cat: 'morning', time: '08:30-10:30', text: 'Desayunar, vestirse y dejar la cama hecha.', done: false },
         { id: 2, cat: 'morning', time: '16:00-16:30', text: 'Merienda y revisar la mochila escolar.', done: false },
@@ -225,9 +227,10 @@
 
     let tasks = [...defaultTasks];
     let currentMessage = '';
-    let binId = '';
+    let storageKey = '';
 
-    document.getElementById('familyKey').value = localStorage.getItem('familySyncKey') || '';
+    // Cargar clave guardada
+    document.getElementById('familyKey').value = localStorage.getItem('familySyncKey_v2') || '';
     initializeSync();
 
     function initializeSync() {
@@ -237,43 +240,41 @@
             return;
         }
         
-        binId = key;
-        localStorage.setItem('familySyncKey', key);
+        storageKey = encodeURIComponent(key);
+        localStorage.setItem('familySyncKey_v2', key);
         
         fetchData();
         clearInterval(window.syncInterval);
-        window.syncInterval = setInterval(fetchData, 5000); // Sincroniza cada 5 segundos de forma súper rápida
+        window.syncInterval = setInterval(fetchData, 6000); // Consulta la nube cada 6 segundos
     }
 
     async function fetchData() {
-        if(!binId) return;
+        if(!storageKey) return;
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-                headers: { "X-Master-Key": "$2a$10$7vN5h3B7wP6w5vGzK6lRhuCid9XhV7gVj20b8B1Q.W14r9pBbeiaG" } // Llave de lectura pública segura
-            });
+            const res = await fetch(`https://api.counterapi.dev/v1/planificador_ninos/room_${storageKey}`);
             if(res.ok) {
-                const result = await res.json();
-                if (result.record && result.record.tasks) {
-                    tasks = result.record.tasks;
-                    currentMessage = result.record.message || '';
-                    renderTasks();
+                const data = await res.json();
+                // Decodificar los datos guardados en la nube pública de texto continuo
+                const decoded = JSON.parse(decodeURIComponent(data.description || "{}"));
+                if(decoded.tasks) {
+                    tasks = decoded.tasks;
+                    currentMessage = decoded.message || '';
                 }
+                renderTasks();
+            } else if(res.status === 404) {
+                // Si la sala en la nube está vacía, subir los datos por defecto de GitHub
+                pushData();
             }
-        } catch (e) { console.log("Reconectando...", e); }
+        } catch (e) { console.log("Sincronizando...", e); }
     }
 
     async function pushData() {
-        if(!binId) return;
+        if(!storageKey) return;
+        const payload = encodeURIComponent(JSON.stringify({ tasks: tasks, message: currentMessage }));
         try {
-            await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-                method: 'PUT',
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Master-Key": "$2a$10$7vN5h3B7wP6w5vGzK6lRhuCid9XhV7gVj20b8B1Q.W14r9pBbeiaG"
-                },
-                body: JSON.stringify({ tasks: tasks, message: currentMessage })
-            });
-        } catch (e) { console.log("Error al guardar en la nube", e); }
+            // Usamos un servidor libre para guardar texto de sincronización mediante solicitudes directas
+            await fetch(`https://api.counterapi.dev/v1/planificador_ninos/room_${storageKey}/set?count=1&description=${payload}`);
+        } catch (e) { console.log("Error al guardar", e); }
     }
 
     function renderTasks() {
